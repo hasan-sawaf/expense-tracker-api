@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content" />
+    <title>Money Tracker</title>
+    <link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body>
+    <div class="app-shell">
+        <!-- Sidebar Navigation (Desktop) & Floating Glass Tab Bar (Mobile) -->
+        <aside class="sidebar" aria-label="Main navigation">
+            <div class="sidebar-brand">
+                <div class="brand-badge" data-icon="wallet" aria-hidden="true"></div>
+                <div class="brand-text">
+                    <h1 data-i18n="appTitle">Money Tracker</h1>
+                    <p class="brand-sub" data-i18n="appSubtitle">Income, real spending, and USD ⇄ SYP exchange tracking</p>
+                </div>
+            </div>
+
+            <nav class="nav-menu" aria-label="Pages">
+                <button type="button" class="nav-link active" data-page="overview">
+                    <span class="nav-icon" data-icon="overview" aria-hidden="true"></span>
+                    <span class="nav-text" data-i18n="navOverview">Overview & Charts</span>
+                </button>
+                <button type="button" class="nav-link" data-page="add">
+                    <span class="nav-icon" data-icon="add" aria-hidden="true"></span>
+                    <span class="nav-text" data-i18n="navAdd">Add Entry</span>
+                </button>
+                <button type="button" class="nav-link" data-page="transactions">
+                    <span class="nav-icon" data-icon="transactions" aria-hidden="true"></span>
+                    <span class="nav-text" data-i18n="navTransactions">Transactions</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div id="api-status" class="status-pill status-checking" aria-live="polite">
+                    <span class="status-dot"></span>
+                    <span class="status-text" data-i18n="apiChecking">Checking...</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace Column -->
+        <div class="app-main-col">
+            <!-- Liquid Glass Top Settings Bar -->
+            <header class="topbar">
+                <div class="topbar-inner">
+                    <div class="rate-widget">
+                        <span class="rate-icon" data-icon="swap" aria-hidden="true"></span>
+                        <label for="global-exchange-rate" class="rate-label" data-i18n="todayRateLabel">Today’s Rate</label>
+                        <div class="rate-input-wrap">
+                            <span class="rate-prefix" data-i18n="rateUnitPrefix">1 $ =</span>
+                            <div class="rate-stepper">
+                                <button type="button" id="rate-dec-btn" class="stepper-btn" data-i18n-aria="decreaseRateAria" aria-label="Decrease rate">
+                                    <span data-icon="minus" aria-hidden="true"></span>
+                                </button>
+                                <input id="global-exchange-rate" type="number" inputmode="numeric" enterkeyhint="done" min="1" step="100" value="15000" />
+                                <button type="button" id="rate-inc-btn" class="stepper-btn" data-i18n-aria="increaseRateAria" aria-label="Increase rate">
+                                    <span data-icon="plus" aria-hidden="true"></span>
+                                </button>
+                            </div>
+                            <span class="rate-suffix" data-i18n="rateUnitSuffix">SYP</span>
+                        </div>
+                    </div>
+
+                    <div class="topbar-controls">
+                        <div class="display-mode-wrap">
+                            <label for="display-currency" class="sr-only" data-i18n="displayModeLabel">View</label>
+                            <select id="display-currency" class="compact-select">
+                                <option value="both" data-i18n="viewBoth">USD + SYP</option>
+                                <option value="USD" data-i18n="viewUSD">USD ($)</option>
+                                <option value="SYP" data-i18n="viewSYP">SYP (ل.س)</option>
+                            </select>
+                        </div>
+
+                        <button
+                            type="button"
+                            id="theme-toggle-btn"
+                            class="theme-toggle-btn"
+                            dir="ltr"
+                            data-i18n-aria="toggleThemeAria"
+                            aria-label="Toggle dark or light theme"
+                            aria-pressed="false"
+                        >
+                            <span class="theme-track-icon theme-track-sun" data-icon="sun" aria-hidden="true"></span>
+                            <span class="theme-track-icon theme-track-moon" data-icon="moon" aria-hidden="true"></span>
+                            <span class="theme-thumb" aria-hidden="true">
+                                <span class="theme-thumb-sun" data-icon="sun"></span>
+                                <span class="theme-thumb-moon" data-icon="moon"></span>
+                            </span>
+                        </button>
+
+                        <button
+                            type="button"
+                            id="lang-toggle-btn"
+                            class="lang-toggle-btn"
+                            dir="ltr"
+                            data-i18n-aria="toggleLangAria"
+                            aria-label="Switch language between English and Arabic"
+                            aria-pressed="false"
+                        >
+                            <span class="lang-track-label" aria-hidden="true">EN</span>
+                            <span class="lang-track-label" aria-hidden="true">ع</span>
+                            <span class="lang-thumb" aria-hidden="true">
+                                <span class="lang-thumb-en">EN</span>
+                                <span class="lang-thumb-ar">ع</span>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <main id="main-page-container" class="page-container">
+                <!-- =========================================================
+                     PAGE 1: OVERVIEW & FLOW CHARTS
+                     ========================================================= -->
+                <section id="page-overview" class="app-page" aria-labelledby="summary-heading">
+                    <div class="page-header-row">
+                        <div class="summary-title-group">
+                            <h2 id="summary-heading" data-i18n="monthlyOverview">Monthly Overview</h2>
+                            <span id="summary-count-badge" class="count-badge">0</span>
+                        </div>
+
+                        <div class="overview-actions-row">
+                            <div class="quick-add-pills">
+                                <button type="button" id="quick-add-expense-btn" class="btn btn-glass-expense btn-sm">
+                                    <span class="btn-icon" data-icon="plus" aria-hidden="true"></span>
+                                    <span data-i18n="quickAddExpense">Expense</span>
+                                </button>
+                                <button type="button" id="quick-add-income-btn" class="btn btn-glass-income btn-sm">
+                                    <span class="btn-icon" data-icon="plus" aria-hidden="true"></span>
+                                    <span data-i18n="quickAddIncome">Income</span>
+                                </button>
+                            </div>
+
+                            <div class="month-nav">
+                                <button type="button" id="prev-month-btn" class="icon-nav-btn" data-i18n-aria="prevMonth" aria-label="Previous month">
+                                    <span class="nav-arrow-wrap" data-icon="chevronLeft" aria-hidden="true"></span>
+                                </button>
+                                <select id="summary-month" aria-label="Month"></select>
+                                <input id="summary-year" type="number" inputmode="numeric" enterkeyhint="done" min="1970" max="9999" aria-label="Year" />
+                                <button type="button" id="next-month-btn" class="icon-nav-btn" data-i18n-aria="nextMonth" aria-label="Next month">
+                                    <span class="nav-arrow-wrap" data-icon="chevronRight" aria-hidden="true"></span>
+                                </button>
+                                <button type="button" id="current-month-btn" class="btn btn-secondary btn-sm" data-i18n="currentMonthBtn">This Month</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 4 Liquid Glass KPI Cards -->
+                    <div class="kpi-grid">
+                        <div class="kpi-card kpi-income">
+                            <div class="kpi-top-row">
+                                <span class="kpi-label" data-i18n="totalIncome">Total Income</span>
+                                <span class="kpi-icon-badge badge-income" data-icon="income" aria-hidden="true"></span>
+                            </div>
+                            <strong id="summary-income-primary" class="kpi-value">$0.00</strong>
+                            <span id="summary-income-secondary" class="kpi-sub">0 SYP</span>
+                        </div>
+
+                        <div class="kpi-card kpi-expense">
+                            <div class="kpi-top-row">
+                                <span class="kpi-label" data-i18n="totalSpent">Total Spent</span>
+                                <span class="kpi-icon-badge badge-expense" data-icon="expense" aria-hidden="true"></span>
+                            </div>
+                            <strong id="summary-spent-primary" class="kpi-value">$0.00</strong>
+                            <span id="summary-spent-secondary" class="kpi-sub">0 SYP</span>
+                        </div>
+
+                        <div class="kpi-card kpi-balance">
+                            <div class="kpi-top-row">
+                                <span class="kpi-label" data-i18n="netBalance">Net Balance</span>
+                                <span class="kpi-icon-badge badge-balance" data-icon="balance" aria-hidden="true"></span>
+                            </div>
+                            <strong id="summary-balance-primary" class="kpi-value">$0.00</strong>
+                            <span id="summary-balance-secondary" class="kpi-sub">0 SYP</span>
+                            <div class="spent-ratio-wrap">
+                                <progress id="spent-ratio-bar" class="spent-ratio-bar" max="100" value="0" aria-label="Percentage of income spent"></progress>
+                                <span id="spent-ratio-text" class="spent-ratio-text"></span>
+                            </div>
+                        </div>
+
+                        <div class="kpi-card kpi-wallet">
+                            <div class="kpi-top-row">
+                                <span class="kpi-label" data-i18n="walletsLabel">Cash Wallets</span>
+                                <span class="kpi-icon-badge badge-wallet" data-icon="wallet" aria-hidden="true"></span>
+                            </div>
+                            <div class="wallet-row">
+                                <span data-i18n="usdWalletLabel">USD Cash:</span>
+                                <strong id="wallet-usd" class="num-ltr">$0.00</strong>
+                            </div>
+                            <div class="wallet-row">
+                                <span data-i18n="sypWalletLabel">SYP Cash:</span>
+                                <strong id="wallet-syp">0 SYP</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Flow Charts Row -->
+                    <div class="charts-grid">
+                        <!-- Cash Flow Chart (Chart.js) -->
+                        <section class="card chart-card" aria-labelledby="cashflow-heading">
+                            <div class="section-header">
+                                <h3 id="cashflow-heading" data-i18n="cashFlowTitle">Cash Flow</h3>
+                                <div class="segmented-tabs" role="tablist" aria-label="Cash flow range">
+                                    <button type="button" class="tab-btn active" role="tab" tabindex="0" aria-selected="true" data-flow-mode="daily" data-i18n="flowDaily">Daily (This Month)</button>
+                                    <button type="button" class="tab-btn" role="tab" tabindex="-1" aria-selected="false" data-flow-mode="monthly" data-i18n="flowMonthly">6-Month Trend</button>
+                                </div>
+                            </div>
+                            <div id="cashflow-canvas-wrap" class="chart-canvas-wrap">
+                                <canvas id="cashflow-canvas" aria-label="Cash Flow Chart"></canvas>
+                            </div>
+                            <p id="cashflow-empty" class="empty-state chart-empty" hidden data-i18n="noChartData">No transactions in this period yet.</p>
+                        </section>
+
+                        <!-- Category Donut + Breakdown (Chart.js) -->
+                        <section class="card chart-card" aria-labelledby="catflow-heading">
+                            <div class="section-header">
+                                <h3 id="catflow-heading" data-i18n="categoryFlowTitle">Category Flow</h3>
+                                <div class="segmented-tabs" role="tablist" aria-label="Category breakdown">
+                                    <button
+                                        type="button"
+                                        id="tab-breakdown-expense"
+                                        class="tab-btn active"
+                                        role="tab"
+                                        tabindex="0"
+                                        aria-selected="true"
+                                        aria-controls="category-breakdown"
+                                        data-breakdown="expense"
+                                        data-i18n="breakdownExpenses"
+                                    >Expenses</button>
+                                    <button
+                                        type="button"
+                                        id="tab-breakdown-income"
+                                        class="tab-btn"
+                                        role="tab"
+                                        tabindex="-1"
+                                        aria-selected="false"
+                                        aria-controls="category-breakdown"
+                                        data-breakdown="income"
+                                        data-i18n="breakdownIncome"
+                                    >Income</button>
+                                </div>
+                            </div>
+                            <div class="donut-layout">
+                                <div id="category-donut" class="category-donut" hidden>
+                                    <div class="donut-wrap">
+                                        <canvas id="category-donut-canvas" aria-label="Category Breakdown Chart"></canvas>
+                                        <div class="donut-center">
+                                            <strong id="donut-center-total" class="num-ltr"></strong>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="category-breakdown" class="breakdown-list" role="tabpanel" aria-labelledby="tab-breakdown-expense"></div>
+                            </div>
+                        </section>
+                    </div>
+
+                    <!-- USD Income Conversions Overview -->
+                    <section class="card" aria-labelledby="usd-conversions-heading">
+                        <div class="section-header">
+                            <div class="title-with-icon">
+                                <span class="section-icon" data-icon="swap" aria-hidden="true"></span>
+                                <h3 id="usd-conversions-heading" data-i18n="usdConversionsTitle">USD Income Conversions (USD → SYP)</h3>
+                            </div>
+                        </div>
+                        <div id="usd-incomes-list" class="usd-incomes-list"></div>
+                    </section>
+                </section>
+
+                <!-- =========================================================
+                     PAGE 2: ADD TRANSACTION (EXPENSE / INCOME + CONVERSION)
+                     ========================================================= -->
+                <section id="page-add" class="app-page" hidden aria-labelledby="add-heading">
+                    <div class="add-page-grid">
+                        <section class="card form-section">
+                            <div class="section-header-stack">
+                                <h2 id="add-heading" data-i18n="addTransaction">Add Transaction</h2>
+                                <p class="subtitle" data-i18n="addPageSubtitle">Record a daily expense or new income in USD or SYP</p>
+                            </div>
+
+                            <form id="create-expense-form" class="expense-form" novalidate>
+                                <div class="type-toggle" role="group" aria-label="Transaction type">
+                                    <button type="button" class="type-btn active-expense" data-type="expense" data-form="create">
+                                        <span class="btn-icon" data-icon="minus" aria-hidden="true"></span>
+                                        <span data-i18n="typeExpense">Expense</span>
+                                    </button>
+                                    <button type="button" class="type-btn" data-type="income" data-form="create">
+                                        <span class="btn-icon" data-icon="plus" aria-hidden="true"></span>
+                                        <span data-i18n="typeIncome">Income</span>
+                                    </button>
+                                </div>
+                                <input type="hidden" id="create-type" name="type" value="expense" />
+
+                                <div class="form-group">
+                                    <label for="title" data-i18n="titleLabel">Title</label>
+                                    <input id="title" name="title" type="text" enterkeyhint="next" required />
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="amount" data-i18n="amountLabel">Amount</label>
+                                        <input id="amount" name="amount" type="number" inputmode="decimal" enterkeyhint="next" step="any" min="0.01" placeholder="0" required />
+                                    </div>
+
+                                    <div class="form-group">
+                                        <span class="field-label" data-i18n="currencyLabel">Currency</span>
+                                        <div class="currency-toggle" role="group" aria-label="Currency">
+                                            <button type="button" class="curr-btn active" data-currency="USD" data-form="create" data-i18n="usdBtn">USD ($)</button>
+                                            <button type="button" class="curr-btn" data-currency="SYP" data-form="create" data-i18n="sypBtn">SYP</button>
+                                        </div>
+                                        <input type="hidden" id="create-currency" name="currency" value="USD" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="create-exchange-rate" data-i18n="exchangeRateLabel">Day’s Rate (1$ = SYP)</label>
+                                    <input id="create-exchange-rate" name="exchangeRate" type="number" inputmode="numeric" enterkeyhint="done" min="1" step="100" value="15000" required />
+                                    <div id="create-conversion-preview" class="conversion-preview"></div>
+                                </div>
+
+                                <!-- Optional Immediate USD -> SYP Conversion (Visible for USD Income) -->
+                                <div id="initial-convert-box" class="initial-convert-box" hidden>
+                                    <label class="checkbox-row">
+                                        <input type="checkbox" id="initial-convert-enabled" />
+                                        <span data-i18n="initialConvertToggle">Did you exchange part of this USD income to SYP?</span>
+                                    </label>
+
+                                    <div id="initial-convert-fields" class="initial-convert-fields" hidden>
+                                        <div class="quick-pct-row">
+                                            <button type="button" class="pill-btn btn-xs" data-init-pct="0.25">25%</button>
+                                            <button type="button" class="pill-btn btn-xs" data-init-pct="0.5">50%</button>
+                                            <button type="button" class="pill-btn btn-xs" data-init-pct="1">100%</button>
+                                        </div>
+
+                                        <div class="form-row">
+                                            <div class="form-group">
+                                                <label for="initial-convert-usd" data-i18n="initialConvertAmountLabel">Converted USD ($)</label>
+                                                <input id="initial-convert-usd" type="number" inputmode="decimal" enterkeyhint="next" step="any" min="0.01" placeholder="0" />
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="initial-convert-rate" data-i18n="initialConvertRateLabel">Rate Used (1$ = SYP)</label>
+                                                <input id="initial-convert-rate" type="number" inputmode="numeric" enterkeyhint="done" min="1" step="100" value="15000" />
+                                            </div>
+                                        </div>
+                                        <div id="initial-convert-preview" class="conversion-preview"></div>
+                                    </div>
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="category" data-i18n="categoryLabel">Category</label>
+                                        <select id="category" name="category" required></select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="label-with-pills">
+                                            <label for="date" data-i18n="dateLabel">Date</label>
+                                            <div class="inline-date-pills">
+                                                <button type="button" class="pill-btn btn-xs" data-quick-date="today" data-i18n="todayBtn">Today</button>
+                                                <button type="button" class="pill-btn btn-xs" data-quick-date="yesterday" data-i18n="yesterdayBtn">Yesterday</button>
+                                            </div>
+                                        </div>
+                                        <input id="date" name="date" type="date" />
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="notes">
+                                        <span data-i18n="notesLabel">Notes</span>
+                                        <span class="optional" data-i18n="optionalTag">(optional)</span>
+                                    </label>
+                                    <textarea id="notes" name="notes" rows="2" enterkeyhint="done" maxlength="500"></textarea>
+                                </div>
+
+                                <div id="create-form-errors" class="form-errors" hidden></div>
+
+                                <button type="submit" id="create-submit-btn" class="btn btn-primary btn-full">
+                                    <span class="btn-icon" data-icon="plus" aria-hidden="true"></span>
+                                    <span id="create-submit-text" data-i18n="saveExpenseBtn">Add Expense</span>
+                                </button>
+                            </form>
+                        </section>
+
+                        <!-- Recent Entries Card -->
+                        <section class="card recent-section" aria-labelledby="recent-heading">
+                            <div class="section-header">
+                                <h3 id="recent-heading" data-i18n="recentAdditionsTitle">Recent Entries</h3>
+                                <button type="button" id="go-to-transactions-btn" class="btn btn-ghost btn-sm">
+                                    <span data-i18n="viewAllTransactionsBtn">View all</span>
+                                    <span class="btn-icon nav-arrow-wrap" data-icon="chevronRight" aria-hidden="true"></span>
+                                </button>
+                            </div>
+                            <div id="recent-entries-list" class="recent-entries-list"></div>
+                        </section>
+                    </div>
+                </section>
+
+                <!-- =========================================================
+                     PAGE 3: TRANSACTIONS HISTORY & FILTERS
+                     ========================================================= -->
+                <section id="page-transactions" class="app-page" hidden aria-labelledby="list-heading">
+                    <section class="card list-section">
+                        <div class="section-header">
+                            <h2 id="list-heading">
+                                <span data-i18n="historyHeading">Transactions</span>
+                                <span id="expense-results-badge" class="count-badge">0</span>
+                            </h2>
+
+                            <div class="pill-group" id="type-filter-pills" role="group" aria-label="Filter by type">
+                                <button type="button" class="pill-btn active" data-filter-type="" data-i18n="filterAll">All</button>
+                                <button type="button" class="pill-btn" data-filter-type="expense" data-i18n="filterExpenses">Expenses</button>
+                                <button type="button" class="pill-btn" data-filter-type="income" data-i18n="filterIncome">Income</button>
+                            </div>
+                        </div>
+
+                        <div class="search-toolbar">
+                            <div class="search-input-wrap">
+                                <span class="search-icon" data-icon="search" aria-hidden="true"></span>
+                                <input id="filter-search" type="search" enterkeyhint="search" data-i18n-placeholder="searchPlaceholder" data-i18n-aria="searchAria" placeholder="Search title or notes..." aria-label="Search transactions" />
+                            </div>
+
+                            <button type="button" id="toggle-filters-btn" class="btn btn-secondary filter-toggle-btn" aria-expanded="false" aria-controls="filters-panel">
+                                <span class="btn-icon" data-icon="filter" aria-hidden="true"></span>
+                                <span data-i18n="filtersBtn">Filters</span>
+                                <span id="active-filters-badge" class="filter-count-dot" hidden>0</span>
+                            </button>
+                        </div>
+
+                        <div id="filters-panel" class="filters-panel" hidden>
+                            <div class="preset-row">
+                                <div class="pill-group" id="date-preset-pills" role="group" aria-label="Quick date presets">
+                                    <button type="button" class="pill-btn active" data-preset="all" data-i18n="presetAll">All Time</button>
+                                    <button type="button" class="pill-btn" data-preset="today" data-i18n="presetToday">Today</button>
+                                    <button type="button" class="pill-btn" data-preset="week" data-i18n="presetWeek">This Week</button>
+                                    <button type="button" class="pill-btn" data-preset="month" data-i18n="presetMonth">This Month</button>
+                                </div>
+
+                                <button type="button" id="reset-filters-btn" class="btn btn-ghost btn-sm">
+                                    <span class="btn-icon" data-icon="reset" aria-hidden="true"></span>
+                                    <span data-i18n="resetFilters">Reset</span>
+                                </button>
+                            </div>
+
+                            <form id="filter-form" class="filter-bar">
+                                <div class="filter-field">
+                                    <label for="filter-category" data-i18n="categoryLabel">Category</label>
+                                    <select id="filter-category" name="category" multiple></select>
+                                </div>
+
+                                <div class="filter-field">
+                                    <label for="filter-currency" data-i18n="currencyLabel">Currency</label>
+                                    <select id="filter-currency" name="currency">
+                                        <option value="" data-i18n="allCurrencies">All Currencies</option>
+                                        <option value="USD" data-i18n="usdBtn">USD ($)</option>
+                                        <option value="SYP" data-i18n="sypBtn">SYP</option>
+                                    </select>
+                                </div>
+
+                                <div class="filter-field">
+                                    <label for="filter-sort" data-i18n="sortLabel">Sort</label>
+                                    <select id="filter-sort" name="sort">
+                                        <option value="date_desc" data-i18n="sortNewest">Newest First</option>
+                                        <option value="date_asc" data-i18n="sortOldest">Oldest First</option>
+                                        <option value="amount_desc" data-i18n="sortHighest">Highest Amount ($)</option>
+                                        <option value="amount_asc" data-i18n="sortLowest">Lowest Amount ($)</option>
+                                    </select>
+                                </div>
+
+                                <div class="filter-field">
+                                    <label for="filter-start-date" data-i18n="fromDate">From</label>
+                                    <input id="filter-start-date" name="startDate" type="date" />
+                                </div>
+
+                                <div class="filter-field">
+                                    <label for="filter-end-date" data-i18n="toDate">To</label>
+                                    <input id="filter-end-date" name="endDate" type="date" />
+                                </div>
+
+                                <div class="filter-field">
+                                    <label for="filter-min-usd" data-i18n="minUsd">Min $</label>
+                                    <input id="filter-min-usd" name="minAmountUSD" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" placeholder="0" />
+                                </div>
+
+                                <div class="filter-field">
+                                    <label for="filter-max-usd" data-i18n="maxUsd">Max $</label>
+                                    <input id="filter-max-usd" name="maxAmountUSD" type="number" inputmode="decimal" enterkeyhint="done" min="0" step="any" placeholder="∞" />
+                                </div>
+                            </form>
+                        </div>
+
+                        <div id="filtered-summary-strip" class="filtered-strip"></div>
+
+                        <div id="expenses-container" class="expenses-container">
+                            <p class="empty-state" data-i18n="loadingText">Loading transactions...</p>
+                        </div>
+                    </section>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- Edit Transaction Modal -->
+    <div id="edit-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2 id="edit-modal-title" data-i18n="editTransaction">Edit Transaction</h2>
+                <button type="button" id="close-modal-btn" class="icon-btn" data-i18n-aria="closeModal" aria-label="Close">
+                    <span class="btn-icon" data-icon="close" aria-hidden="true"></span>
+                </button>
+            </div>
+
+            <form id="edit-expense-form" class="expense-form" novalidate>
+                <input type="hidden" id="edit-id" />
+
+                <div class="type-toggle" role="group" aria-label="Transaction type">
+                    <button type="button" class="type-btn active-expense" data-type="expense" data-form="edit">
+                        <span class="btn-icon" data-icon="minus" aria-hidden="true"></span>
+                        <span data-i18n="typeExpense">Expense</span>
+                    </button>
+                    <button type="button" class="type-btn" data-type="income" data-form="edit">
+                        <span class="btn-icon" data-icon="plus" aria-hidden="true"></span>
+                        <span data-i18n="typeIncome">Income</span>
+                    </button>
+                </div>
+                <input type="hidden" id="edit-type" name="type" value="expense" />
+
+                <div class="form-group">
+                    <label for="edit-title" data-i18n="titleLabel">Title</label>
+                    <input id="edit-title" name="title" type="text" enterkeyhint="next" required />
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-amount" data-i18n="amountLabel">Amount</label>
+                        <input id="edit-amount" name="amount" type="number" inputmode="decimal" enterkeyhint="next" step="any" min="0.01" required />
+                    </div>
+
+                    <div class="form-group">
+                        <span class="field-label" data-i18n="currencyLabel">Currency</span>
+                        <div class="currency-toggle" role="group" aria-label="Currency">
+                            <button type="button" class="curr-btn active" data-currency="USD" data-form="edit" data-i18n="usdBtn">USD ($)</button>
+                            <button type="button" class="curr-btn" data-currency="SYP" data-form="edit" data-i18n="sypBtn">SYP</button>
+                        </div>
+                        <input type="hidden" id="edit-currency" name="currency" value="USD" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="edit-exchange-rate" data-i18n="exchangeRateLabel">Day’s Rate (1$ = SYP)</label>
+                    <input id="edit-exchange-rate" name="exchangeRate" type="number" inputmode="numeric" enterkeyhint="done" min="1" step="100" required />
+                    <div id="edit-conversion-preview" class="conversion-preview"></div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-category" data-i18n="categoryLabel">Category</label>
+                        <select id="edit-category" name="category" required></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit-date" data-i18n="dateLabel">Date</label>
+                        <input id="edit-date" name="date" type="date" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="edit-notes" data-i18n="notesLabel">Notes</label>
+                    <textarea id="edit-notes" name="notes" rows="2" enterkeyhint="done" maxlength="500"></textarea>
+                </div>
+
+                <div id="edit-form-errors" class="form-errors" hidden></div>
+
+                <div class="modal-actions">
+                    <button type="button" id="cancel-edit-btn" class="btn btn-ghost" data-i18n="cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary" data-i18n="saveChanges">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Convert USD Income -> SYP Modal -->
+    <div id="convert-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-labelledby="convert-modal-title">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h2 id="convert-modal-title" data-i18n="convertModalTitle">Convert USD Income to SYP</h2>
+                <button type="button" id="close-convert-modal-btn" class="icon-btn" data-i18n-aria="closeModal" aria-label="Close">
+                    <span class="btn-icon" data-icon="close" aria-hidden="true"></span>
+                </button>
+            </div>
+
+            <div class="convert-income-banner">
+                <strong id="convert-income-title"></strong>
+                <div class="convert-available-row">
+                    <span data-i18n="convertAvailableLabel">Available to convert:</span>
+                    <strong id="convert-remaining-usd" class="num-ltr text-income">$0.00</strong>
+                </div>
+            </div>
+
+            <form id="convert-income-form" class="expense-form" novalidate>
+                <input type="hidden" id="convert-income-id" />
+
+                <div class="quick-pct-row">
+                    <button type="button" class="pill-btn btn-xs" data-conv-pct="0.25">25%</button>
+                    <button type="button" class="pill-btn btn-xs" data-conv-pct="0.5">50%</button>
+                    <button type="button" class="pill-btn btn-xs" data-conv-pct="1" data-i18n="convertAllBtn">All Remaining</button>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="convert-usd-amount" data-i18n="convertUsdAmountLabel">Amount in USD ($)</label>
+                        <input id="convert-usd-amount" type="number" inputmode="decimal" enterkeyhint="next" step="any" min="0.01" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="convert-exchange-rate" data-i18n="convertRateLabel">Exchange Rate Used (1 $ = SYP)</label>
+                        <input id="convert-exchange-rate" type="number" inputmode="numeric" enterkeyhint="done" min="1" step="100" required />
+                    </div>
+                </div>
+
+                <div id="convert-modal-preview" class="conversion-preview"></div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="convert-date" data-i18n="convertDateLabel">Exchange Date</label>
+                        <input id="convert-date" type="date" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="convert-notes" data-i18n="convertNotesLabel">Note (optional)</label>
+                        <input id="convert-notes" type="text" maxlength="200" data-i18n-placeholder="convertNotesPlaceholder" placeholder="e.g. Exchange office" />
+                    </div>
+                </div>
+
+                <div id="convert-form-errors" class="form-errors" hidden></div>
+
+                <div class="modal-actions">
+                    <button type="button" id="cancel-convert-btn" class="btn btn-ghost" data-i18n="cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary" data-i18n="convertSubmitBtn">Record Conversion</button>
+                </div>
+            </form>
+
+            <div class="convert-history-section">
+                <h3 class="convert-history-title" data-i18n="convertHistoryLabel">Recorded Conversions</h3>
+                <div id="convert-history-list" class="convert-history-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast" hidden role="status" aria-live="polite"></div>
+
+    <script src="./vendor/chart.umd.min.js"></script>
+    <script type="module" src="./js/main.js"></script>
+</body>
+</html>
